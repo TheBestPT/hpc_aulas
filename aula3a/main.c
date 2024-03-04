@@ -6,6 +6,11 @@
 #include "stb_image.h"
 #include "stb_image_write.h"
 
+unsigned char get_gray_level(int r, int c, int nCols, int nRows, unsigned char *data){
+    int idxgray = r * nCols + c;
+    return data[idxgray];
+}
+
 unsigned char rgb2gray(unsigned char r, unsigned char g, unsigned char b){
     /*
     const double pr = 0.3; //weigth red
@@ -29,6 +34,7 @@ int main(int argc, char *argv[]){
     unsigned char *data = stbi_load(filename, &nCols, &nRows, &nChannels, 0);
 
     unsigned char *grayData = (unsigned char*) malloc(sizeof(unsigned char) * nCols * nRows);
+    unsigned char *grayEdge = (unsigned char*) malloc(sizeof(unsigned char) * nCols * nRows);
 
     for (int c = 0; c < nCols; c++)
     {
@@ -44,8 +50,36 @@ int main(int argc, char *argv[]){
         }
         
     }
+
+    //  Detetação de contornos na linha
+    for (int c = 1; c < nCols - 1; c++)
+    {
+        for (int r = 1; r < nRows - 1; r++)
+        {
+            //Horizontal edges
+            unsigned char atual = get_gray_level(r, c, nCols, nRows, grayData);
+            unsigned char anterior = get_gray_level(r, c-1, nCols, nRows, grayData);
+            unsigned char diff = abs(atual - anterior);
+            int idxgray = r * nCols + c;
+            if (diff > 20)
+            {
+                grayEdge[idxgray] = 0xff;
+            }
+            
+            //Vertical edges
+            unsigned char atual_ver = get_gray_level(r, c, nCols, nRows, grayData);
+            unsigned char anterior_ver = get_gray_level(r-1, c, nCols, nRows, grayData);
+            unsigned char diff_ver = abs(atual_ver - anterior_ver);
+            if (diff_ver > 20)
+            {
+                grayEdge[idxgray] = 0xff;
+            }
+        }
+    }
+    
     
     stbi_write_jpg("grayImage.jpg", nCols, nRows, 1, grayData, 90);
+    stbi_write_jpg("grayEdge.jpg", nCols, nRows, 1, grayEdge, 90);
 
     printf("nCols = %d nRows = %d nChannels = %d\n", nCols, nRows, nChannels);
 
